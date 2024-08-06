@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 )
 
 type Park struct {
@@ -23,6 +26,7 @@ type DestinationsResponse struct {
 }
 
 func main() {
+	// Fetch theme parks
 	data, err := getDestinations()
 
 	if err != nil {
@@ -30,10 +34,31 @@ func main() {
 	}
 
 	fmt.Println(`Welcome to the Wait Time Guessing Game. Please choose which park you'd like to guess wait times for:`)
-
-	for name := range data {
-		fmt.Println(name)
+	fmt.Println("----------------------------------------------------------------------------------------------------")
+	// Print the theme park choices
+	println(len(data))
+	for _, park := range data {
+		println(park.Name)
 	}
+	fmt.Println("----------------------------------------------------------------------------------------------------")
+
+	// Take in user choice of theme park
+	var playerParkChoice string
+	scanner := bufio.NewScanner(os.Stdin)
+
+	for playerParkChoice == "" {
+		scanner.Scan()
+		playerParkChoice = scanner.Text()
+		if playerParkChoice == "" {
+			println("Park choice cannot be blank. Please select a park.")
+		}
+	}
+
+	selectedPark := data[playerParkChoice]
+	println(selectedPark.ID)
+
+	// Fetch live data for park
+	// parkData, err := getLiveParkData(selectedPark.ID)
 
 }
 
@@ -45,10 +70,21 @@ func getDestinations() (map[string]Destination, error) {
 	}
 
 	defer resp.Body.Close()
-
 	fmt.Println("Response status: ", resp.Status)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body: ", err)
+	}
 
 	var response DestinationsResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+	}
+
+	// Print the result
+	//fmt.Println("API Response as map:", response)
+
 	var parks = make(map[string]Destination)
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -60,4 +96,8 @@ func getDestinations() (map[string]Destination, error) {
 	}
 
 	return parks, err
+}
+
+func getLiveParkData(parkId string) {
+
 }
